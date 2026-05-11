@@ -1,0 +1,6 @@
+.env
+venv/
+*.png
+__pycache__/
+*.py[codz]
+*$py.class

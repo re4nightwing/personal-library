@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Home Library{% endblock %}
+{% block content %}
+
+<div class="app-shell">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="brand-mark">📚</span>
+      <span class="brand-name">Library</span>
+      <form method="post" action="/logout" style="margin-left:auto">
+        <button type="submit" class="btn-logout" title="Sign out">⏏</button>
+      </form>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Filter by tag</div>
+      <div class="tag-filter-list" id="tagFilterList">
+        <button class="tag-filter active" data-tag-id="">All books</button>
+        {% for tag in tags %}
+        <button
+          class="tag-filter"
+          data-tag-id="{{ tag.id }}"
+          style="--tc: {{ tag.color }}"
+        >{{ tag.name }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="sidebar-section sidebar-tags">
+      <div class="sidebar-label">Tags
+        <button class="btn-icon" id="btnNewTag" title="Add tag">＋</button>
+      </div>
+      <div id="tagManagerList">
+        {% for tag in tags %}
+        <div class="tag-manager-row" data-tag-id="{{ tag.id }}">
+          <span class="tag-chip" style="background:{{ tag.color }}">{{ tag.name }}</span>
+          <button class="btn-icon-sm" onclick="editTag({{ tag.id }}, '{{ tag.name }}', '{{ tag.color }}')">✎</button>
+          <button class="btn-icon-sm danger" onclick="deleteTag({{ tag.id }})">✕</button>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      Logged in as <strong>{{ user.username }}</strong>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main-content">
+    <div class="topbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input
+          type="search"
+          id="searchInput"
+          class="search-input"
+          placeholder="Search your library…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <span class="search-hint" id="searchHint"></span>
+      </div>
+      <button class="btn-add-book" id="btnAddBook">＋ Add Book</button>
+    </div>
+
+    <div class="books-grid" id="booksGrid">
+      <div class="loading-books">Loading your collection…</div>
+    </div>
+  </main>
+</div>
+
+<!-- Add/Edit Book Modal -->
+<div class="modal-overlay" id="bookModal" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Add Book</h2>
+      <button class="modal-close" id="btnModalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label>Book Title</label>
+        <input type="text" id="bookTitleInput" placeholder="e.g. The Name of the Wind" class="modal-input" autocomplete="off"/>
+      </div>
+      <div class="field-group">
+        <label>Tags</label>
+        <div class="tag-selector" id="tagSelector"></div>
+        <div class="tag-create-inline">
+          <input type="text" id="newTagInlineInput" placeholder="New tag name…" class="modal-input-sm" />
+          <input type="color" id="newTagColorPicker" value="#6366f1" class="color-picker" />
+          <button class="btn-sm" id="btnCreateTagInline">Add</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="btnModalCancel">Cancel</button>
+      <button class="btn-primary" id="btnModalSave">Save Book</button>
+    </div>
+  </div>
+</div>
+
+<!-- New/Edit Tag Modal -->
+<div class="modal-overlay" id="tagModal" hidden>
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2 id="tagModalTitle">New Tag</h2>
+      <button class="modal-close" id="btnTagModalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label>Tag Name</label>
+        <input type="text" id="tagNameInput" placeholder="e.g. sci-fi" class="modal-input" />
+      </div>
+      <div class="field-group">
+        <label>Color</label>
+        <div class="color-swatches" id="colorSwatches"></div>
+        <input type="color" id="tagColorInput" value="#6366f1" class="color-picker" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="btnTagCancel">Cancel</button>
+      <button class="btn-primary" id="btnTagSave">Save Tag</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Pass server-side tags to JS
+  window.__TAGS__ = {{ tags | tojson }};
+</script>
+{% endblock %}

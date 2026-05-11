@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Sign In — Home Library{% endblock %}
+{% block content %}
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-brand">
+      <span class="brand-icon">📚</span>
+      <h1>Home Library</h1>
+      <p>Your personal reading collection</p>
+    </div>
+
+    <form method="post" action="/login" class="login-form" autocomplete="off">
+      <input type="hidden" name="step" value="{{ step }}" />
+
+      {% if step == "password" %}
+        <div class="field-group">
+          <label for="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            value="{{ username or '' }}"
+            required
+            autofocus
+            autocomplete="username"
+            placeholder="your username"
+          />
+        </div>
+        <div class="field-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            autocomplete="current-password"
+            placeholder="••••••••"
+          />
+        </div>
+      {% else %}
+        <input type="hidden" name="username" value="{{ username }}" />
+        <div class="totp-prompt">
+          <div class="totp-icon">🔐</div>
+          <p>Open <strong>Google Authenticator</strong> and enter the 6-digit code for <strong>{{ username }}</strong></p>
+        </div>
+        <div class="field-group">
+          <label for="totp_code">Authenticator Code</label>
+          <input
+            type="text"
+            id="totp_code"
+            name="totp_code"
+            required
+            autofocus
+            autocomplete="one-time-code"
+            inputmode="numeric"
+            maxlength="6"
+            pattern="\d{6}"
+            placeholder="000000"
+            class="totp-input"
+          />
+        </div>
+      {% endif %}
+
+      {% if error %}
+        <div class="login-error">{{ error }}</div>
+      {% endif %}
+
+      <button type="submit" class="btn-primary">
+        {% if step == "password" %}Continue →{% else %}Sign In{% endif %}
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
