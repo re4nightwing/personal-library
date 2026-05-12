@@ -16,6 +16,9 @@ let editingBookId = null;
 let editingTagId = null;
 let selectedTagIds = new Set();
 let currentQuery = '';
+let suggestTimer = null;
+let suggestIndex = -1;
+let suggestItems = [];
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 const booksGrid        = document.getElementById('booksGrid');
@@ -33,7 +36,11 @@ const tagManagerList   = document.getElementById('tagManagerList');
 const newTagInlineInput = document.getElementById('newTagInlineInput');
 const newTagColorPicker = document.getElementById('newTagColorPicker');
 const modalTitle       = document.getElementById('modalTitle');
+const suggestDropdown  = document.getElementById('suggestDropdown');
 const tagModalTitle    = document.getElementById('tagModalTitle');
+const appShell         = document.querySelector('.app-shell');
+const btnMenuToggle    = document.getElementById('btnMenuToggle');
+const sidebarOverlay   = document.getElementById('sidebarOverlay');
 
 // ── Utility ───────────────────────────────────────────────────────────────────
 const api = {
@@ -179,6 +186,92 @@ function toggleTagSelection(tagId, el) {
   }
 }
 
+// ── Autocomplete ─────────────────────────────────────────────────────────────
+function hideSuggestions() {
+  suggestDropdown.hidden = true;
+  suggestIndex = -1;
+}
+
+function showSuggestions(items) {
+  suggestItems = items;
+  suggestIndex = -1;
+  if (!items.length) { hideSuggestions(); return; }
+
+  suggestDropdown.innerHTML = items.map((item, i) => {
+    const meta = [item.author, item.year].filter(Boolean).join(' · ');
+    return `<li class="suggest-item" data-idx="${i}">
+      <span class="suggest-item-title">${escHtml(item.title)}</span>
+      ${meta ? `<span class="suggest-item-meta">${escHtml(meta)}</span>` : ''}
+    </li>`;
+  }).join('');
+
+  suggestDropdown.hidden = false;
+
+  suggestDropdown.querySelectorAll('.suggest-item').forEach(el => {
+    el.addEventListener('mousedown', e => {
+      e.preventDefault(); // don't blur input
+      pickSuggestion(parseInt(el.dataset.idx));
+    });
+  });
+}
+
+function pickSuggestion(idx) {
+  if (idx < 0 || idx >= suggestItems.length) return;
+  bookTitleInput.value = suggestItems[idx].title;
+  hideSuggestions();
+  bookTitleInput.focus();
+}
+
+async function fetchSuggestions(q) {
+  if (q.length < 2) { hideSuggestions(); return; }
+
+  // Show spinner
+  suggestDropdown.innerHTML = '<li class="suggest-loading">Searching Open Library…</li>';
+  suggestDropdown.hidden = false;
+
+  try {
+    const items = await api.get(`/api/suggest?q=${encodeURIComponent(q)}`);
+    // Only render if input hasn't changed since we fired
+    if (bookTitleInput.value.trim() === q) showSuggestions(items);
+  } catch {
+    hideSuggestions();
+  }
+}
+
+bookTitleInput.addEventListener('input', () => {
+  clearTimeout(suggestTimer);
+  const q = bookTitleInput.value.trim();
+  if (!q) { hideSuggestions(); return; }
+  suggestTimer = setTimeout(() => fetchSuggestions(q), 280);
+});
+
+bookTitleInput.addEventListener('keydown', e => {
+  if (suggestDropdown.hidden) return;
+  const items = suggestDropdown.querySelectorAll('.suggest-item');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    suggestIndex = Math.min(suggestIndex + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('active', i === suggestIndex));
+    items[suggestIndex]?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    suggestIndex = Math.max(suggestIndex - 1, -1);
+    items.forEach((el, i) => el.classList.toggle('active', i === suggestIndex));
+    if (suggestIndex >= 0) items[suggestIndex]?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter' && suggestIndex >= 0) {
+    e.preventDefault(); // don't also trigger saveBook
+    e.stopPropagation();
+    pickSuggestion(suggestIndex);
+  } else if (e.key === 'Escape') {
+    hideSuggestions();
+  }
+});
+
+bookTitleInput.addEventListener('blur', () => {
+  // Small delay so mousedown on item fires first
+  setTimeout(hideSuggestions, 150);
+});
+
 function openAddBook() {
   editingBookId = null;
   selectedTagIds.clear();
@@ -319,8 +412,8 @@ window.deleteTag = async function(id) {
 // ── Wire up buttons & close handlers ─────────────────────────────────────────
 document.getElementById('btnAddBook').addEventListener('click', openAddBook);
 document.getElementById('btnModalSave').addEventListener('click', saveBook);
-document.getElementById('btnModalClose').addEventListener('click', () => bookModal.hidden = true);
-document.getElementById('btnModalCancel').addEventListener('click', () => bookModal.hidden = true);
+document.getElementById('btnModalClose').addEventListener('click', () => { bookModal.hidden = true; hideSuggestions(); });
+document.getElementById('btnModalCancel').addEventListener('click', () => { bookModal.hidden = true; hideSuggestions(); });
 document.getElementById('btnTagSave').addEventListener('click', saveTag);
 document.getElementById('btnTagModalClose').addEventListener('click', () => tagModal.hidden = true);
 document.getElementById('btnTagCancel').addEventListener('click', () => tagModal.hidden = true);
@@ -328,6 +421,16 @@ document.getElementById('btnTagCancel').addEventListener('click', () => tagModal
 // Close on overlay click
 bookModal.addEventListener('click', e => { if (e.target === bookModal) bookModal.hidden = true; });
 tagModal.addEventListener('click', e => { if (e.target === tagModal) tagModal.hidden = true; });
+
+// Mobile sidebar toggle
+if (btnMenuToggle && appShell && sidebarOverlay) {
+  btnMenuToggle.addEventListener('click', () => {
+    appShell.classList.toggle('sidebar-open');
+  });
+  sidebarOverlay.addEventListener('click', () => {
+    appShell.classList.remove('sidebar-open');
+  });
+}
 
 // Keyboard shortcuts
 document.addEventListener('keydown', e => {

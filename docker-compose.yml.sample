@@ -1,0 +1,19 @@
+version: "3.8"
+services:
+  personal_library:
+    build: .
+    container_name: personal_library
+    networks:
+      - postgres
+    ports:
+      - "8288:8288"
+    environment:
+      - DATABASE_URL=postgresql://user:password@localhost:5432/mylibrary
+      - SECRET_KEY=<32-bit-secret>
+      - TOTP_ISSUER=HomeLibrary
+      - SECURE_COOKIES=true
+      - SESSION_MINUTES=60
+
+networks:
+  postgres:           
+    external: true

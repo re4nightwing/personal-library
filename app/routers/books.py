@@ -182,3 +182,35 @@ async def delete_book(book_id: int, user=Depends(require_user)):
     if deleted == "DELETE 0":
         raise HTTPException(404, "Book not found")
     return {"ok": True}
+
+
+@router.get("/api/suggest")
+async def suggest_titles(q: str = "", user=Depends(require_user)):
+    """Proxy to Open Library search — returns title + author suggestions."""
+    import httpx
+    if len(q.strip()) < 2:
+        return JSONResponse([])
+    try:
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            resp = await client.get(
+                "https://openlibrary.org/search.json",
+                params={"q": q, "fields": "title,author_name,first_publish_year", "limit": 8},
+            )
+        data = resp.json()
+        results = []
+        seen = set()
+        for doc in data.get("docs", []):
+            title = doc.get("title", "").strip()
+            if not title or title.lower() in seen:
+                continue
+            seen.add(title.lower())
+            authors = doc.get("author_name", [])
+            year = doc.get("first_publish_year")
+            results.append({
+                "title": title,
+                "author": authors[0] if authors else None,
+                "year": year,
+            })
+        return JSONResponse(results)
+    except Exception:
+        return JSONResponse([])  # silently fail — suggestions are optional

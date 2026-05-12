@@ -4,6 +4,7 @@
 
 <div class="app-shell">
   <!-- Sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <span class="brand-mark">📚</span>
@@ -50,6 +51,7 @@
   <!-- Main content -->
   <main class="main-content">
     <div class="topbar">
+      <button class="btn-icon btn-menu-toggle" id="btnMenuToggle" title="Open menu">☰</button>
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
         <input
@@ -81,7 +83,10 @@
     <div class="modal-body">
       <div class="field-group">
         <label>Book Title</label>
-        <input type="text" id="bookTitleInput" placeholder="e.g. The Name of the Wind" class="modal-input" autocomplete="off"/>
+        <div class="autocomplete-wrap">
+          <input type="text" id="bookTitleInput" placeholder="e.g. The Name of the Wind" class="modal-input" autocomplete="off" />
+          <ul class="suggest-dropdown" id="suggestDropdown" hidden></ul>
+        </div>
       </div>
       <div class="field-group">
         <label>Tags</label>
