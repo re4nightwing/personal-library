@@ -6,6 +6,12 @@ A personal book collection manager with full-text search, colorful tags, and two
 
 ---
 
+## Project Overview
+
+This project is a robust and secure web application designed to help users manage their personal book collections. It leverages **FastAPI** for a high-performance backend, **PostgreSQL with PGroonga** for efficient full-text search capabilities, and **Vanilla JavaScript** for a dynamic frontend. Key aspects include a secure authentication system with two-factor authentication (TOTP), real-time search, and flexible tag management for organizing books. The application emphasizes security best practices with HttpOnly cookies, security headers, and rate limiting.
+
+---
+
 ## Features
 
 - **Fast full-text search** powered by PGroonga — finds books instantly as you type
